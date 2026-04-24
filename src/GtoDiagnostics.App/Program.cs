@@ -1,47 +1,23 @@
-using GtoDiagnostics.Core;
-using GtoDiagnostics.Protocol;
-using GtoDiagnostics.Serial;
-using GtoDiagnostics.Simulator;
+using Avalonia;
 
-if (args is ["ports"])
+namespace GtoDiagnostics.App;
+
+internal static class Program
 {
-    var ports = new LinuxSerialPortDiscovery().ListPorts();
-    if (ports.Count == 0)
+    [STAThread]
+    public static void Main(string[] args)
     {
-        Console.WriteLine("No Linux USB serial devices found.");
-        return;
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
-    foreach (var port in ports)
+    public static AppBuilder BuildAvaloniaApp()
     {
-        Console.WriteLine(port.Name);
+        return AppBuilder.Configure<App>()
+            .UsePlatformDetect()
+#if DEBUG
+            .WithDeveloperTools()
+#endif
+            .WithInterFont()
+            .LogToTrace();
     }
-
-    return;
 }
-
-if (args is ["simulate-capture", var outputPath])
-{
-    await using var capture = new RawCaptureWriter(outputPath);
-    await using var transport = new ScriptedByteTransport();
-
-    var command = HexBytes.Parse("10 01");
-    var response = HexBytes.Parse("90 01 55");
-    transport.EnqueueResponse(response);
-
-    await transport.OpenAsync();
-    await transport.WriteAsync(command);
-    await capture.WriteAsync(new RawDiagnosticMessage(DateTimeOffset.UtcNow, RawMessageDirection.Transmit, DiagnosticModule.EngineEcu.ToString(), command));
-
-    var buffer = new byte[16];
-    var count = await transport.ReadAsync(buffer);
-    await capture.WriteAsync(new RawDiagnosticMessage(DateTimeOffset.UtcNow, RawMessageDirection.Receive, DiagnosticModule.EngineEcu.ToString(), buffer[..count]));
-
-    Console.WriteLine($"Wrote simulated raw capture to {outputPath}");
-    return;
-}
-
-Console.WriteLine("GTO Diagnostics");
-Console.WriteLine("Commands:");
-Console.WriteLine("  ports");
-Console.WriteLine("  simulate-capture <output.jsonl>");

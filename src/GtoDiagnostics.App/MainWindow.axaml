@@ -1,0 +1,186 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        d:DesignWidth="1180"
+        d:DesignHeight="760"
+        Width="1180"
+        Height="760"
+        MinWidth="880"
+        MinHeight="620"
+        x:Class="GtoDiagnostics.App.MainWindow"
+        Title="GTO Diagnostics">
+  <Grid RowDefinitions="Auto,*"
+        Background="#F5F7FA">
+    <Border Grid.Row="0"
+            Background="#17202A"
+            Padding="24,18">
+      <Grid ColumnDefinitions="*,Auto"
+            RowDefinitions="Auto,Auto">
+        <TextBlock Grid.Row="0"
+                   Grid.Column="0"
+                   Text="GTO Diagnostics"
+                   FontSize="24"
+                   FontWeight="SemiBold"
+                   Foreground="#FFFFFF" />
+        <TextBlock Grid.Row="1"
+                   Grid.Column="0"
+                   Text="Mk1 Mitsubishi GTO / 3000GT / Dodge Stealth"
+                   Margin="0,4,0,0"
+                   FontSize="13"
+                   Foreground="#B8C2CC" />
+        <Border Grid.RowSpan="2"
+                Grid.Column="1"
+                Background="#263241"
+                CornerRadius="4"
+                Padding="12,8"
+                VerticalAlignment="Center">
+          <TextBlock Name="ConnectionStatusText"
+                     Text="Disconnected"
+                     FontSize="13"
+                     FontWeight="SemiBold"
+                     Foreground="#FFCC66" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1"
+          Margin="24"
+          ColumnDefinitions="340,*"
+          RowDefinitions="*"
+          ColumnSpacing="18">
+      <Border Grid.Column="0"
+              Background="#FFFFFF"
+              BorderBrush="#D8DEE6"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="18">
+        <StackPanel Spacing="18">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Connection"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Foreground="#17202A" />
+            <TextBlock Text="Serial Port"
+                       FontSize="12"
+                       Foreground="#52616F" />
+            <ComboBox Name="PortComboBox"
+                      MinHeight="36"
+                      HorizontalAlignment="Stretch" />
+            <Grid ColumnDefinitions="*,*"
+                  ColumnSpacing="8">
+              <Button Name="RefreshPortsButton"
+                      Grid.Column="0"
+                      Content="Refresh"
+                      MinHeight="36"
+                      HorizontalAlignment="Stretch" />
+              <Button Name="TestConnectionButton"
+                      Grid.Column="1"
+                      Content="Test"
+                      MinHeight="36"
+                      HorizontalAlignment="Stretch" />
+            </Grid>
+          </StackPanel>
+
+          <Border Height="1"
+                  Background="#E3E8EF" />
+
+          <StackPanel Spacing="10">
+            <TextBlock Text="Mode"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Foreground="#17202A" />
+            <CheckBox Name="SimulatorCheckBox"
+                      Content="Simulator"
+                      IsChecked="True" />
+          </StackPanel>
+
+          <Border Height="1"
+                  Background="#E3E8EF" />
+
+          <StackPanel Spacing="10">
+            <TextBlock Text="Raw Capture"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Foreground="#17202A" />
+            <Grid ColumnDefinitions="*,*"
+                  ColumnSpacing="8">
+              <Button Name="StartCaptureButton"
+                      Grid.Column="0"
+                      Content="Start"
+                      MinHeight="36"
+                      HorizontalAlignment="Stretch" />
+              <Button Name="StopCaptureButton"
+                      Grid.Column="1"
+                      Content="Stop"
+                      MinHeight="36"
+                      HorizontalAlignment="Stretch"
+                      IsEnabled="False" />
+            </Grid>
+            <TextBlock Name="CapturePathText"
+                       Text="No capture file"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       Foreground="#52616F" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Grid Grid.Column="1"
+            RowDefinitions="Auto,*,Auto"
+            RowSpacing="14">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel>
+            <TextBlock Text="Live Session"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="#17202A" />
+            <TextBlock Name="SessionSummaryText"
+                       Text="Simulator ready"
+                       Margin="0,4,0,0"
+                       FontSize="13"
+                       Foreground="#52616F" />
+          </StackPanel>
+          <TextBlock Name="UpdateRateText"
+                     Grid.Column="1"
+                     Text="0 Hz"
+                     VerticalAlignment="Center"
+                     FontSize="13"
+                     FontWeight="SemiBold"
+                     Foreground="#52616F" />
+        </Grid>
+
+        <Border Grid.Row="1"
+                Background="#101820"
+                CornerRadius="6"
+                Padding="14">
+          <TextBox Name="RawLogTextBox"
+                   AcceptsReturn="True"
+                   IsReadOnly="True"
+                   TextWrapping="Wrap"
+                   FontFamily="Consolas, Menlo, monospace"
+                   FontSize="13"
+                   Foreground="#DCE5EF"
+                   Background="#101820"
+                   BorderThickness="0"
+                   Text="Ready." />
+        </Border>
+
+        <Grid Grid.Row="2"
+              ColumnDefinitions="*,Auto"
+              ColumnSpacing="12">
+          <TextBlock Text="Read-only mode"
+                     VerticalAlignment="Center"
+                     FontSize="12"
+                     Foreground="#52616F" />
+          <Button Name="SimulateSampleButton"
+                  Grid.Column="1"
+                  Content="Simulate Sample"
+                  MinHeight="36"
+                  Padding="14,0" />
+        </Grid>
+      </Grid>
+    </Grid>
+  </Grid>
+</Window>
