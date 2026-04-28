@@ -28,6 +28,17 @@ var loaded = await DefinitionLoader.LoadAsync(path);
 AssertEqual("gto_mk1", loaded.VehicleFamily);
 AssertEqual(1, loaded.Sensors.Count);
 
+var engineDefinition = KnownModuleDefinitions.CreateProvisionalEngineEcu();
+var decoder = new LiveDataDecoder(engineDefinition);
+var readings = decoder.Decode([0x90, 0x01, 0x64, 0x80, 0x8E]);
+AssertEqual(3, readings.Count);
+AssertEqual("coolant_temp", readings[0].Id);
+AssertEqual(60d, readings[0].Value);
+AssertEqual("throttle_position", readings[1].Id);
+AssertEqual(50.19607843137255d, readings[1].Value);
+AssertEqual("battery_voltage", readings[2].Id);
+AssertEqual(14.200000000000001d, readings[2].Value);
+
 Console.WriteLine("GtoDiagnostics.Core.Tests passed.");
 
 static void AssertEqual<T>(T expected, T actual)

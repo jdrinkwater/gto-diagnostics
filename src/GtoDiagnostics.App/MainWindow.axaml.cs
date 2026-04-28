@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using GtoDiagnostics.Core;
+using GtoDiagnostics.Core.Definitions;
 using GtoDiagnostics.Protocol;
 using GtoDiagnostics.Serial;
 using GtoDiagnostics.Simulator;
@@ -9,12 +10,16 @@ namespace GtoDiagnostics.App;
 public partial class MainWindow : Window
 {
     private readonly LinuxSerialPortDiscovery portDiscovery = new();
+    private readonly VehicleModuleDefinition engineDefinition = KnownModuleDefinitions.CreateProvisionalEngineEcu();
+    private readonly LiveDataDecoder liveDataDecoder;
     private RawCaptureWriter? captureWriter;
     private string? capturePath;
     private int sampleCount;
 
     public MainWindow()
     {
+        liveDataDecoder = new LiveDataDecoder(engineDefinition);
+
         InitializeComponent();
 
         RefreshPortsButton.Click += (_, _) => RefreshPorts();
@@ -26,6 +31,7 @@ public partial class MainWindow : Window
 
         RefreshPorts();
         UpdateSessionSummary();
+        SensorReadingsListBox.ItemsSource = new[] { "No decoded readings yet." };
     }
 
     private void RefreshPorts()
@@ -105,7 +111,7 @@ public partial class MainWindow : Window
     {
         await using var transport = new ScriptedByteTransport();
         var command = HexBytes.Parse("10 01");
-        var response = HexBytes.Parse("90 01 55");
+        var response = HexBytes.Parse("90 01 64 80 8E");
 
         transport.EnqueueResponse(response);
         await transport.OpenAsync();
@@ -120,8 +126,17 @@ public partial class MainWindow : Window
         sampleCount++;
         UpdateRateText.Text = $"{sampleCount} sample(s)";
         ConnectionStatusText.Text = "Simulator";
+        SensorReadingsListBox.ItemsSource = liveDataDecoder
+            .Decode(received)
+            .Select(FormatReading)
+            .ToArray();
         AppendLog($"TX {HexBytes.Format(command)}");
         AppendLog($"RX {HexBytes.Format(received)}");
+    }
+
+    private static string FormatReading(SensorReading reading)
+    {
+        return $"{reading.Name}: {reading.Value:0.##} {reading.Unit}";
     }
 
     private async Task WriteCaptureMessageAsync(RawMessageDirection direction, byte[] bytes)

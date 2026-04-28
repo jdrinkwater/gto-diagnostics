@@ -27,6 +27,7 @@ This is the first scaffold. It includes:
 
 - Avalonia desktop app shell
 - module and sensor definition models
+- provisional engine ECU live-data decoder for simulator UI work
 - protocol hex helpers and raw JSONL capture writer
 - serial device discovery for common Linux USB serial device paths
 - hardware-free scripted byte transport for simulator/replay testing

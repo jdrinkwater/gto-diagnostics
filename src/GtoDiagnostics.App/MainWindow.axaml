@@ -11,6 +11,61 @@
         MinHeight="620"
         x:Class="GtoDiagnostics.App.MainWindow"
         Title="GTO Diagnostics">
+  <Window.Styles>
+    <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#C9D4E2" />
+      <Setter Property="BorderBrush" Value="#8796A8" />
+      <Setter Property="TextElement.Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#B8C6D6" />
+      <Setter Property="BorderBrush" Value="#6F7F91" />
+      <Setter Property="TextElement.Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#EEF2F6" />
+      <Setter Property="BorderBrush" Value="#CDD6E0" />
+      <Setter Property="TextElement.Foreground" Value="#52616F" />
+    </Style>
+    <Style Selector="CheckBox">
+      <Setter Property="Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="CheckBox:pointerover">
+      <Setter Property="Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="CheckBox:checked:pointerover">
+      <Setter Property="Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="CheckBox:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="TextElement.Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#DCE6F1" />
+      <Setter Property="TextElement.Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#C9D4E2" />
+      <Setter Property="TextElement.Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#B8C6D6" />
+      <Setter Property="TextElement.Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="ComboBoxItem">
+      <Setter Property="Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#DCE6F1" />
+      <Setter Property="TextElement.Foreground" Value="#17202A" />
+    </Style>
+    <Style Selector="ComboBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#C9D4E2" />
+      <Setter Property="TextElement.Foreground" Value="#17202A" />
+    </Style>
+  </Window.Styles>
   <Grid RowDefinitions="Auto,*"
         Background="#F5F7FA">
     <Border Grid.Row="0"
@@ -73,11 +128,17 @@
               <Button Name="RefreshPortsButton"
                       Grid.Column="0"
                       Content="Refresh"
+                      Background="#E8EDF3"
+                      Foreground="#17202A"
+                      BorderBrush="#B8C2CC"
                       MinHeight="36"
                       HorizontalAlignment="Stretch" />
               <Button Name="TestConnectionButton"
                       Grid.Column="1"
                       Content="Test"
+                      Background="#E8EDF3"
+                      Foreground="#17202A"
+                      BorderBrush="#B8C2CC"
                       MinHeight="36"
                       HorizontalAlignment="Stretch" />
             </Grid>
@@ -92,7 +153,8 @@
                        FontWeight="SemiBold"
                        Foreground="#17202A" />
             <CheckBox Name="SimulatorCheckBox"
-                      Content="Simulator"
+                      Content="Simulator mode"
+                      Foreground="#17202A"
                       IsChecked="True" />
           </StackPanel>
 
@@ -109,11 +171,17 @@
               <Button Name="StartCaptureButton"
                       Grid.Column="0"
                       Content="Start"
+                      Background="#E8EDF3"
+                      Foreground="#17202A"
+                      BorderBrush="#B8C2CC"
                       MinHeight="36"
                       HorizontalAlignment="Stretch" />
               <Button Name="StopCaptureButton"
                       Grid.Column="1"
                       Content="Stop"
+                      Background="#E8EDF3"
+                      Foreground="#17202A"
+                      BorderBrush="#B8C2CC"
                       MinHeight="36"
                       HorizontalAlignment="Stretch"
                       IsEnabled="False" />
@@ -128,7 +196,7 @@
       </Border>
 
       <Grid Grid.Column="1"
-            RowDefinitions="Auto,*,Auto"
+            RowDefinitions="Auto,*,Auto,Auto"
             RowSpacing="14">
         <Grid ColumnDefinitions="*,Auto">
           <StackPanel>
@@ -167,7 +235,28 @@
                    Text="Ready." />
         </Border>
 
-        <Grid Grid.Row="2"
+        <Border Grid.Row="2"
+                Background="#FFFFFF"
+                BorderBrush="#D8DEE6"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="14">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Decoded Readings"
+                       FontSize="15"
+                       FontWeight="SemiBold"
+                       Foreground="#17202A" />
+            <ListBox Name="SensorReadingsListBox"
+                     MinHeight="92"
+                     MaxHeight="132"
+                     Background="#FFFFFF"
+                     Foreground="#17202A"
+                     BorderBrush="#E3E8EF"
+                     BorderThickness="1" />
+          </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="3"
               ColumnDefinitions="*,Auto"
               ColumnSpacing="12">
           <TextBlock Text="Read-only mode"
@@ -177,6 +266,9 @@
           <Button Name="SimulateSampleButton"
                   Grid.Column="1"
                   Content="Simulate Sample"
+                  Background="#D8E3F0"
+                  Foreground="#17202A"
+                  BorderBrush="#9AA8B8"
                   MinHeight="36"
                   Padding="14,0" />
         </Grid>
