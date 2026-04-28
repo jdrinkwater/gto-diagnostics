@@ -1,5 +1,6 @@
 using GtoDiagnostics.Core;
 using GtoDiagnostics.Core.Definitions;
+using GtoDiagnostics.Core.Logging;
 
 var sensor = new SensorDefinition
 {
@@ -39,6 +40,18 @@ AssertEqual(50.19607843137255d, readings[1].Value);
 AssertEqual("battery_voltage", readings[2].Id);
 AssertEqual(14.200000000000001d, readings[2].Value);
 
+var decodedLogPath = Path.Combine(Path.GetTempPath(), $"gto-decoded-readings-test-{Guid.NewGuid():N}.jsonl");
+await using (var writer = new DecodedReadingLogWriter(decodedLogPath))
+{
+    await writer.WriteAsync(DateTimeOffset.UnixEpoch, DiagnosticModule.EngineEcu, readings);
+}
+
+var decodedLog = await File.ReadAllTextAsync(decodedLogPath);
+AssertContains("coolant_temp", decodedLog);
+AssertContains("throttle_position", decodedLog);
+AssertContains("battery_voltage", decodedLog);
+AssertContains("EngineEcu", decodedLog);
+
 Console.WriteLine("GtoDiagnostics.Core.Tests passed.");
 
 static void AssertEqual<T>(T expected, T actual)
@@ -46,5 +59,13 @@ static void AssertEqual<T>(T expected, T actual)
     if (!EqualityComparer<T>.Default.Equals(expected, actual))
     {
         throw new InvalidOperationException($"Expected '{expected}', got '{actual}'.");
+    }
+}
+
+static void AssertContains(string expected, string actual)
+{
+    if (!actual.Contains(expected, StringComparison.Ordinal))
+    {
+        throw new InvalidOperationException($"Expected text to contain '{expected}'.");
     }
 }

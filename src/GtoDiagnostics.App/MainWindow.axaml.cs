@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using GtoDiagnostics.Core;
 using GtoDiagnostics.Core.Definitions;
+using GtoDiagnostics.Core.Logging;
 using GtoDiagnostics.Protocol;
 using GtoDiagnostics.Serial;
 using GtoDiagnostics.Simulator;
@@ -13,7 +14,9 @@ public partial class MainWindow : Window
     private readonly VehicleModuleDefinition engineDefinition = KnownModuleDefinitions.CreateProvisionalEngineEcu();
     private readonly LiveDataDecoder liveDataDecoder;
     private RawCaptureWriter? captureWriter;
+    private DecodedReadingLogWriter? decodedReadingLogWriter;
     private string? capturePath;
+    private string? decodedReadingsPath;
     private int sampleCount;
 
     public MainWindow()
@@ -74,33 +77,47 @@ public partial class MainWindow : Window
 
     private async Task StartCaptureAsync()
     {
-        if (captureWriter is not null)
+        if (captureWriter is not null || decodedReadingLogWriter is not null)
         {
             return;
         }
 
         Directory.CreateDirectory("captures");
-        capturePath = Path.Combine("captures", $"session-{DateTimeOffset.Now:yyyyMMdd-HHmmss}.jsonl");
+        var sessionId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss");
+        capturePath = Path.Combine("captures", $"session-{sessionId}.raw.jsonl");
+        decodedReadingsPath = Path.Combine("captures", $"session-{sessionId}.readings.jsonl");
         captureWriter = new RawCaptureWriter(capturePath);
+        decodedReadingLogWriter = new DecodedReadingLogWriter(decodedReadingsPath);
 
-        CapturePathText.Text = capturePath;
+        CapturePathText.Text = $"Raw: {capturePath}{Environment.NewLine}Readings: {decodedReadingsPath}";
         StartCaptureButton.IsEnabled = false;
         StopCaptureButton.IsEnabled = true;
 
         await WriteCaptureMessageAsync(RawMessageDirection.Transmit, "capture_start"u8.ToArray());
         AppendLog($"Capture started: {capturePath}");
+        AppendLog($"Decoded readings log started: {decodedReadingsPath}");
     }
 
     private async Task StopCaptureAsync()
     {
-        if (captureWriter is null)
+        if (captureWriter is null && decodedReadingLogWriter is null)
         {
             return;
         }
 
         await WriteCaptureMessageAsync(RawMessageDirection.Receive, "capture_stop"u8.ToArray());
-        await captureWriter.DisposeAsync();
+        if (captureWriter is not null)
+        {
+            await captureWriter.DisposeAsync();
+        }
+
+        if (decodedReadingLogWriter is not null)
+        {
+            await decodedReadingLogWriter.DisposeAsync();
+        }
+
         captureWriter = null;
+        decodedReadingLogWriter = null;
 
         StartCaptureButton.IsEnabled = true;
         StopCaptureButton.IsEnabled = false;
@@ -126,10 +143,9 @@ public partial class MainWindow : Window
         sampleCount++;
         UpdateRateText.Text = $"{sampleCount} sample(s)";
         ConnectionStatusText.Text = "Simulator";
-        SensorReadingsListBox.ItemsSource = liveDataDecoder
-            .Decode(received)
-            .Select(FormatReading)
-            .ToArray();
+        var readings = liveDataDecoder.Decode(received);
+        SensorReadingsListBox.ItemsSource = readings.Select(FormatReading).ToArray();
+        await WriteDecodedReadingsAsync(readings);
         AppendLog($"TX {HexBytes.Format(command)}");
         AppendLog($"RX {HexBytes.Format(received)}");
     }
@@ -151,6 +167,19 @@ public partial class MainWindow : Window
             direction,
             DiagnosticModule.EngineEcu.ToString(),
             bytes));
+    }
+
+    private async Task WriteDecodedReadingsAsync(IReadOnlyList<SensorReading> readings)
+    {
+        if (decodedReadingLogWriter is null)
+        {
+            return;
+        }
+
+        await decodedReadingLogWriter.WriteAsync(
+            DateTimeOffset.UtcNow,
+            DiagnosticModule.EngineEcu,
+            readings);
     }
 
     private void UpdateSessionSummary()
