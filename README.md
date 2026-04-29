@@ -34,6 +34,7 @@ This is the first scaffold. It includes:
 - protocol hex helpers and raw JSONL capture writer
 - raw JSONL capture replay reader
 - shared live-data polling session for simulator and future transports
+- capture session manifest files with session metadata and generated log paths
 - serial device discovery for common Linux USB serial device paths
 - hardware-free scripted byte transport for simulator/replay testing
 - small executable test projects with no external test package dependency

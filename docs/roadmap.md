@@ -26,11 +26,11 @@ be useful without depending on unknown vehicle protocol details.
    - Use an `IByteTransport`, a module definition, raw capture logging, and decoded logging.
    - Share this path between simulator, tests, and future serial transport.
 
-5. Simulator-backed app session
+5. Simulator-backed app session - complete
    - Route the Avalonia simulator button through the live polling session.
    - Keep the UI as a consumer of session results rather than the owner of protocol flow.
 
-6. Capture metadata and session manifest
+6. Capture metadata and session manifest - complete
    - Write a manifest beside capture files.
    - Include vehicle family, module, start time, adapter or port when known, and notes.
    - Preserve reverse-engineering context for future real-vehicle captures.

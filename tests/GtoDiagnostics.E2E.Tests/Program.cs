@@ -60,20 +60,22 @@ await using var pollingTransport = new ScriptedByteTransport();
 pollingTransport.EnqueueResponse(HexBytes.Parse("90 01 64 80 8E"));
 await pollingTransport.OpenAsync();
 
-var pollingCapturePath = Path.Combine(Path.GetTempPath(), $"gto-polling-capture-test-{Guid.NewGuid():N}.jsonl");
-var pollingJsonPath = Path.Combine(Path.GetTempPath(), $"gto-polling-readings-test-{Guid.NewGuid():N}.jsonl");
-var pollingCsvPath = Path.Combine(Path.GetTempPath(), $"gto-polling-readings-test-{Guid.NewGuid():N}.csv");
+var pollingSessionDirectory = Path.Combine(Path.GetTempPath(), $"gto-polling-session-test-{Guid.NewGuid():N}");
+CaptureSessionManifest manifest;
 
-await using (var pollingCaptureWriter = new RawCaptureWriter(pollingCapturePath))
-await using (var pollingJsonWriter = new DecodedReadingLogWriter(pollingJsonPath))
-await using (var pollingCsvWriter = new DecodedReadingCsvLogWriter(pollingCsvPath))
+await using (var captureSession = await DiagnosticCaptureSession.CreateAsync(
+    pollingSessionDirectory,
+    definition,
+    "Simulator",
+    "E2E test"))
 {
+    manifest = captureSession.Manifest;
     var session = new LivePollingSession(
         pollingTransport,
         definition,
-        pollingCaptureWriter,
-        pollingJsonWriter,
-        pollingCsvWriter);
+        captureSession.RawCaptureWriter,
+        captureSession.DecodedReadingLogWriter,
+        captureSession.DecodedReadingCsvLogWriter);
 
     var result = await session.PollOnceAsync();
     AssertEqual("10 01", HexBytes.Format(result.Command));
@@ -82,17 +84,26 @@ await using (var pollingCsvWriter = new DecodedReadingCsvLogWriter(pollingCsvPat
     AssertEqual("coolant_temp", result.Readings[0].Id);
 }
 
-var pollingCapture = await File.ReadAllTextAsync(pollingCapturePath);
+var manifestJson = await File.ReadAllTextAsync(manifest.ManifestPath);
+AssertContains("gto_mk1", manifestJson);
+AssertContains("EngineEcu", manifestJson);
+AssertContains("Simulator", manifestJson);
+AssertContains("E2E test", manifestJson);
+AssertContains(manifest.RawCapturePath.Replace("\\", "\\\\", StringComparison.Ordinal), manifestJson);
+AssertContains(manifest.DecodedReadingsPath.Replace("\\", "\\\\", StringComparison.Ordinal), manifestJson);
+AssertContains(manifest.DecodedCsvPath.Replace("\\", "\\\\", StringComparison.Ordinal), manifestJson);
+
+var pollingCapture = await File.ReadAllTextAsync(manifest.RawCapturePath);
 AssertContainsIgnoreCase("\"direction\":\"transmit\"", pollingCapture);
 AssertContainsIgnoreCase("\"direction\":\"receive\"", pollingCapture);
 AssertContains("\"bytes\":\"10 01\"", pollingCapture);
 AssertContains("\"bytes\":\"90 01 64 80 8E\"", pollingCapture);
 
-var pollingJson = await File.ReadAllTextAsync(pollingJsonPath);
+var pollingJson = await File.ReadAllTextAsync(manifest.DecodedReadingsPath);
 AssertContains("coolant_temp", pollingJson);
 AssertContains("battery_voltage", pollingJson);
 
-var pollingCsv = await File.ReadAllTextAsync(pollingCsvPath);
+var pollingCsv = await File.ReadAllTextAsync(manifest.DecodedCsvPath);
 AssertContains("timestamp,module,sensor_id,sensor_name,value,unit", pollingCsv);
 AssertContains("EngineEcu,coolant_temp,Coolant Temperature,60,C", pollingCsv);
 

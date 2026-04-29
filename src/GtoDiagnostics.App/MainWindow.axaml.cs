@@ -1,7 +1,6 @@
 using Avalonia.Controls;
 using GtoDiagnostics.Core;
 using GtoDiagnostics.Core.Definitions;
-using GtoDiagnostics.Core.Logging;
 using GtoDiagnostics.Protocol;
 using GtoDiagnostics.Runtime;
 using GtoDiagnostics.Serial;
@@ -13,12 +12,7 @@ public partial class MainWindow : Window
 {
     private readonly LinuxSerialPortDiscovery portDiscovery = new();
     private readonly VehicleModuleDefinition engineDefinition = KnownModuleDefinitions.CreateProvisionalEngineEcu();
-    private RawCaptureWriter? captureWriter;
-    private DecodedReadingLogWriter? decodedReadingLogWriter;
-    private DecodedReadingCsvLogWriter? decodedReadingCsvLogWriter;
-    private string? capturePath;
-    private string? decodedReadingsPath;
-    private string? decodedReadingsCsvPath;
+    private DiagnosticCaptureSession? captureSession;
     private int sampleCount;
 
     public MainWindow()
@@ -77,56 +71,38 @@ public partial class MainWindow : Window
 
     private async Task StartCaptureAsync()
     {
-        if (captureWriter is not null || decodedReadingLogWriter is not null || decodedReadingCsvLogWriter is not null)
+        if (captureSession is not null)
         {
             return;
         }
 
-        Directory.CreateDirectory("captures");
-        var sessionId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss");
-        capturePath = Path.Combine("captures", $"session-{sessionId}.raw.jsonl");
-        decodedReadingsPath = Path.Combine("captures", $"session-{sessionId}.readings.jsonl");
-        decodedReadingsCsvPath = Path.Combine("captures", $"session-{sessionId}.readings.csv");
-        captureWriter = new RawCaptureWriter(capturePath);
-        decodedReadingLogWriter = new DecodedReadingLogWriter(decodedReadingsPath);
-        decodedReadingCsvLogWriter = new DecodedReadingCsvLogWriter(decodedReadingsCsvPath);
+        captureSession = await DiagnosticCaptureSession.CreateAsync(
+            "captures",
+            engineDefinition,
+            SimulatorCheckBox.IsChecked == true ? "Simulator" : "Serial");
+        var manifest = captureSession.Manifest;
 
-        CapturePathText.Text = $"Raw: {capturePath}{Environment.NewLine}Readings: {decodedReadingsPath}{Environment.NewLine}CSV: {decodedReadingsCsvPath}";
+        CapturePathText.Text = $"Manifest: {manifest.ManifestPath}{Environment.NewLine}Raw: {manifest.RawCapturePath}{Environment.NewLine}Readings: {manifest.DecodedReadingsPath}{Environment.NewLine}CSV: {manifest.DecodedCsvPath}";
         StartCaptureButton.IsEnabled = false;
         StopCaptureButton.IsEnabled = true;
 
         await WriteCaptureMessageAsync(RawMessageDirection.Transmit, "capture_start"u8.ToArray());
-        AppendLog($"Capture started: {capturePath}");
-        AppendLog($"Decoded readings log started: {decodedReadingsPath}");
-        AppendLog($"Decoded CSV log started: {decodedReadingsCsvPath}");
+        AppendLog($"Manifest written: {manifest.ManifestPath}");
+        AppendLog($"Capture started: {manifest.RawCapturePath}");
+        AppendLog($"Decoded readings log started: {manifest.DecodedReadingsPath}");
+        AppendLog($"Decoded CSV log started: {manifest.DecodedCsvPath}");
     }
 
     private async Task StopCaptureAsync()
     {
-        if (captureWriter is null && decodedReadingLogWriter is null && decodedReadingCsvLogWriter is null)
+        if (captureSession is null)
         {
             return;
         }
 
         await WriteCaptureMessageAsync(RawMessageDirection.Receive, "capture_stop"u8.ToArray());
-        if (captureWriter is not null)
-        {
-            await captureWriter.DisposeAsync();
-        }
-
-        if (decodedReadingLogWriter is not null)
-        {
-            await decodedReadingLogWriter.DisposeAsync();
-        }
-
-        if (decodedReadingCsvLogWriter is not null)
-        {
-            await decodedReadingCsvLogWriter.DisposeAsync();
-        }
-
-        captureWriter = null;
-        decodedReadingLogWriter = null;
-        decodedReadingCsvLogWriter = null;
+        await captureSession.DisposeAsync();
+        captureSession = null;
 
         StartCaptureButton.IsEnabled = true;
         StopCaptureButton.IsEnabled = false;
@@ -143,9 +119,9 @@ public partial class MainWindow : Window
         var pollingSession = new LivePollingSession(
             transport,
             engineDefinition,
-            captureWriter,
-            decodedReadingLogWriter,
-            decodedReadingCsvLogWriter);
+            captureSession?.RawCaptureWriter,
+            captureSession?.DecodedReadingLogWriter,
+            captureSession?.DecodedReadingCsvLogWriter);
         var result = await pollingSession.PollOnceAsync();
 
         sampleCount++;
@@ -163,16 +139,12 @@ public partial class MainWindow : Window
 
     private async Task WriteCaptureMessageAsync(RawMessageDirection direction, byte[] bytes)
     {
-        if (captureWriter is null)
+        if (captureSession is null)
         {
             return;
         }
 
-        await captureWriter.WriteAsync(new RawDiagnosticMessage(
-            DateTimeOffset.UtcNow,
-            direction,
-            DiagnosticModule.EngineEcu.ToString(),
-            bytes));
+        await captureSession.WriteRawMessageAsync(direction, bytes);
     }
 
     private void UpdateSessionSummary()
