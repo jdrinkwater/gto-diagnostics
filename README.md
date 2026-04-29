@@ -27,6 +27,7 @@ This is the first scaffold. It includes:
 
 - Avalonia desktop app shell
 - module and sensor definition models
+- definition-driven live-data request grouping
 - provisional engine ECU live-data decoder for simulator UI work
 - decoded live-data JSONL session logging
 - decoded live-data CSV session logging

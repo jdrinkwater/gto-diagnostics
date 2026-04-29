@@ -16,4 +16,22 @@ public sealed record VehicleModuleDefinition
 
     /// <summary>Sensor definitions exposed by the module.</summary>
     public IReadOnlyList<SensorDefinition> Sensors { get; init; } = [];
+
+    /// <summary>
+    /// Groups sensors by configured live-data command.
+    /// </summary>
+    /// <returns>Request definitions ordered by first appearance in the sensor list.</returns>
+    public IReadOnlyList<LiveDataRequestDefinition> GetLiveDataRequests()
+    {
+        var requests = new List<LiveDataRequestDefinition>();
+
+        foreach (var group in Sensors
+            .Where(static sensor => !string.IsNullOrWhiteSpace(sensor.Command))
+            .GroupBy(static sensor => sensor.Command!.Trim(), StringComparer.OrdinalIgnoreCase))
+        {
+            requests.Add(new LiveDataRequestDefinition(group.Key, group.ToArray()));
+        }
+
+        return requests;
+    }
 }

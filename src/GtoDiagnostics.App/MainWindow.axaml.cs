@@ -137,7 +137,14 @@ public partial class MainWindow : Window
     private async Task SimulateSampleAsync()
     {
         await using var transport = new ScriptedByteTransport();
-        var command = HexBytes.Parse("10 01");
+        var request = engineDefinition.GetLiveDataRequests().FirstOrDefault();
+        if (request is null)
+        {
+            AppendLog("No live-data request is defined for the engine ECU.");
+            return;
+        }
+
+        var command = HexBytes.Parse(request.Command);
         var response = HexBytes.Parse("90 01 64 80 8E");
 
         transport.EnqueueResponse(response);

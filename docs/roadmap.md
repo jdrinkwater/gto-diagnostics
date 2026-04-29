@@ -16,9 +16,9 @@ be useful without depending on unknown vehicle protocol details.
    - Keep timestamps, module, sensor id, display name, value, and unit.
    - Cover formatting with focused tests.
 
-3. Definition-driven request plan
+3. Definition-driven request plan - complete
    - Group sensors by configured command.
-   - Expose request bytes from module definitions.
+   - Expose request commands from module definitions.
    - Remove hardcoded polling commands from app-level flow where possible.
 
 4. Live polling session abstraction

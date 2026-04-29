@@ -7,6 +7,7 @@ var sensor = new SensorDefinition
     Id = "coolant_temp",
     Name = "Coolant Temperature",
     Unit = "C",
+    Command = "10 01",
     ByteIndex = 1,
     Multiplier = 1,
     Offset = -40,
@@ -28,8 +29,34 @@ await DefinitionLoader.SaveAsync(path, definition);
 var loaded = await DefinitionLoader.LoadAsync(path);
 AssertEqual("gto_mk1", loaded.VehicleFamily);
 AssertEqual(1, loaded.Sensors.Count);
+AssertEqual("10 01", loaded.Sensors[0].Command);
+
+var groupedDefinition = new VehicleModuleDefinition
+{
+    Module = DiagnosticModule.EngineEcu,
+    VehicleFamily = "gto_mk1",
+    Sensors =
+    [
+        sensor with { Id = "coolant_temp", Command = "10 01" },
+        sensor with { Id = "throttle_position", Command = "10 01" },
+        sensor with { Id = "battery_voltage", Command = "10 02" },
+        sensor with { Id = "unmapped_sensor", Command = null },
+    ],
+};
+
+var liveDataRequests = groupedDefinition.GetLiveDataRequests();
+AssertEqual(2, liveDataRequests.Count);
+AssertEqual("10 01", liveDataRequests[0].Command);
+AssertEqual(2, liveDataRequests[0].Sensors.Count);
+AssertEqual("10 02", liveDataRequests[1].Command);
+AssertEqual(1, liveDataRequests[1].Sensors.Count);
 
 var engineDefinition = KnownModuleDefinitions.CreateProvisionalEngineEcu();
+var engineRequests = engineDefinition.GetLiveDataRequests();
+AssertEqual(1, engineRequests.Count);
+AssertEqual("10 01", engineRequests[0].Command);
+AssertEqual(3, engineRequests[0].Sensors.Count);
+
 var decoder = new LiveDataDecoder(engineDefinition);
 var readings = decoder.Decode([0x90, 0x01, 0x64, 0x80, 0x8E]);
 AssertEqual(3, readings.Count);
