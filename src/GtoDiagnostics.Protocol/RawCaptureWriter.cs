@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace GtoDiagnostics.Protocol;
 
@@ -8,11 +7,6 @@ namespace GtoDiagnostics.Protocol;
 /// </summary>
 public sealed class RawCaptureWriter : IAsyncDisposable
 {
-    private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
-    {
-        Converters = { new JsonStringEnumConverter() },
-    };
-
     private readonly StreamWriter writer;
 
     /// <summary>
@@ -31,7 +25,7 @@ public sealed class RawCaptureWriter : IAsyncDisposable
     /// <param name="message">Message to write.</param>
     public async Task WriteAsync(RawDiagnosticMessage message)
     {
-        var json = JsonSerializer.Serialize(message, Options);
+        var json = JsonSerializer.Serialize(message, RawCaptureJson.Options);
         await writer.WriteLineAsync(json).ConfigureAwait(false);
         await writer.FlushAsync().ConfigureAwait(false);
     }

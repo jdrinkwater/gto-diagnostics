@@ -30,9 +30,14 @@ This is the first scaffold. It includes:
 - provisional engine ECU live-data decoder for simulator UI work
 - decoded live-data JSONL session logging
 - protocol hex helpers and raw JSONL capture writer
+- raw JSONL capture replay reader
 - serial device discovery for common Linux USB serial device paths
 - hardware-free scripted byte transport for simulator/replay testing
 - small executable test projects with no external test package dependency
+
+## Roadmap
+
+Near-term vertical slices are tracked in [docs/roadmap.md](docs/roadmap.md).
 
 ## Build
 

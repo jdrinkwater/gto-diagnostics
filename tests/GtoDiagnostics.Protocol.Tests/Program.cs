@@ -17,10 +17,23 @@ await using (var writer = new RawCaptureWriter(path))
 }
 
 var line = await File.ReadAllTextAsync(path);
-if (!line.Contains("engine_ecu", StringComparison.OrdinalIgnoreCase) || !line.Contains("receive", StringComparison.OrdinalIgnoreCase))
+if (!line.Contains("engine_ecu", StringComparison.OrdinalIgnoreCase)
+    || !line.Contains("receive", StringComparison.OrdinalIgnoreCase)
+    || !line.Contains("01 02", StringComparison.OrdinalIgnoreCase))
 {
-    throw new InvalidOperationException("Raw capture JSON did not contain expected module and direction fields.");
+    throw new InvalidOperationException("Raw capture JSON did not contain expected module, direction, and bytes fields.");
 }
+
+var capturedMessages = new List<RawDiagnosticMessage>();
+await foreach (var message in RawCaptureReader.ReadAllAsync(path))
+{
+    capturedMessages.Add(message);
+}
+
+AssertEqual(1, capturedMessages.Count);
+AssertEqual(RawMessageDirection.Receive, capturedMessages[0].Direction);
+AssertEqual("engine_ecu", capturedMessages[0].Module);
+AssertEqual("01 02", HexBytes.Format(capturedMessages[0].Bytes));
 
 Console.WriteLine("GtoDiagnostics.Protocol.Tests passed.");
 
