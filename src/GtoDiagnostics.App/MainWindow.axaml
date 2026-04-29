@@ -81,7 +81,7 @@
                    Foreground="#FFFFFF" />
         <TextBlock Grid.Row="1"
                    Grid.Column="0"
-                   Text="Mk1 Mitsubishi GTO / 3000GT / Dodge Stealth"
+                   Text="Mitsubishi GTO / 3000GT / Dodge Stealth"
                    Margin="0,4,0,0"
                    FontSize="13"
                    Foreground="#B8C2CC" />

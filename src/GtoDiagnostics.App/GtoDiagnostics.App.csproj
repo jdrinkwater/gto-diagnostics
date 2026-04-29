@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="../GtoDiagnostics.Core/GtoDiagnostics.Core.csproj" />
     <ProjectReference Include="../GtoDiagnostics.Protocol/GtoDiagnostics.Protocol.csproj" />
+    <ProjectReference Include="../GtoDiagnostics.Runtime/GtoDiagnostics.Runtime.csproj" />
     <ProjectReference Include="../GtoDiagnostics.Serial/GtoDiagnostics.Serial.csproj" />
     <ProjectReference Include="../GtoDiagnostics.Simulator/GtoDiagnostics.Simulator.csproj" />
   </ItemGroup>

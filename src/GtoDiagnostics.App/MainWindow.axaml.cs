@@ -3,6 +3,7 @@ using GtoDiagnostics.Core;
 using GtoDiagnostics.Core.Definitions;
 using GtoDiagnostics.Core.Logging;
 using GtoDiagnostics.Protocol;
+using GtoDiagnostics.Runtime;
 using GtoDiagnostics.Serial;
 using GtoDiagnostics.Simulator;
 
@@ -12,7 +13,6 @@ public partial class MainWindow : Window
 {
     private readonly LinuxSerialPortDiscovery portDiscovery = new();
     private readonly VehicleModuleDefinition engineDefinition = KnownModuleDefinitions.CreateProvisionalEngineEcu();
-    private readonly LiveDataDecoder liveDataDecoder;
     private RawCaptureWriter? captureWriter;
     private DecodedReadingLogWriter? decodedReadingLogWriter;
     private DecodedReadingCsvLogWriter? decodedReadingCsvLogWriter;
@@ -23,8 +23,6 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
-        liveDataDecoder = new LiveDataDecoder(engineDefinition);
-
         InitializeComponent();
 
         RefreshPortsButton.Click += (_, _) => RefreshPorts();
@@ -100,6 +98,7 @@ public partial class MainWindow : Window
         await WriteCaptureMessageAsync(RawMessageDirection.Transmit, "capture_start"u8.ToArray());
         AppendLog($"Capture started: {capturePath}");
         AppendLog($"Decoded readings log started: {decodedReadingsPath}");
+        AppendLog($"Decoded CSV log started: {decodedReadingsCsvPath}");
     }
 
     private async Task StopCaptureAsync()
@@ -137,34 +136,24 @@ public partial class MainWindow : Window
     private async Task SimulateSampleAsync()
     {
         await using var transport = new ScriptedByteTransport();
-        var request = engineDefinition.GetLiveDataRequests().FirstOrDefault();
-        if (request is null)
-        {
-            AppendLog("No live-data request is defined for the engine ECU.");
-            return;
-        }
-
-        var command = HexBytes.Parse(request.Command);
         var response = HexBytes.Parse("90 01 64 80 8E");
 
         transport.EnqueueResponse(response);
         await transport.OpenAsync();
-        await transport.WriteAsync(command);
-        await WriteCaptureMessageAsync(RawMessageDirection.Transmit, command);
-
-        var buffer = new byte[16];
-        var count = await transport.ReadAsync(buffer);
-        var received = buffer[..count];
-        await WriteCaptureMessageAsync(RawMessageDirection.Receive, received);
+        var pollingSession = new LivePollingSession(
+            transport,
+            engineDefinition,
+            captureWriter,
+            decodedReadingLogWriter,
+            decodedReadingCsvLogWriter);
+        var result = await pollingSession.PollOnceAsync();
 
         sampleCount++;
         UpdateRateText.Text = $"{sampleCount} sample(s)";
         ConnectionStatusText.Text = "Simulator";
-        var readings = liveDataDecoder.Decode(received);
-        SensorReadingsListBox.ItemsSource = readings.Select(FormatReading).ToArray();
-        await WriteDecodedReadingsAsync(readings);
-        AppendLog($"TX {HexBytes.Format(command)}");
-        AppendLog($"RX {HexBytes.Format(received)}");
+        SensorReadingsListBox.ItemsSource = result.Readings.Select(FormatReading).ToArray();
+        AppendLog($"TX {HexBytes.Format(result.Command)}");
+        AppendLog($"RX {HexBytes.Format(result.Response)}");
     }
 
     private static string FormatReading(SensorReading reading)
@@ -184,32 +173,6 @@ public partial class MainWindow : Window
             direction,
             DiagnosticModule.EngineEcu.ToString(),
             bytes));
-    }
-
-    private async Task WriteDecodedReadingsAsync(IReadOnlyList<SensorReading> readings)
-    {
-        if (decodedReadingLogWriter is null && decodedReadingCsvLogWriter is null)
-        {
-            return;
-        }
-
-        var timestamp = DateTimeOffset.UtcNow;
-
-        if (decodedReadingLogWriter is not null)
-        {
-            await decodedReadingLogWriter.WriteAsync(
-                timestamp,
-                DiagnosticModule.EngineEcu,
-                readings);
-        }
-
-        if (decodedReadingCsvLogWriter is not null)
-        {
-            await decodedReadingCsvLogWriter.WriteAsync(
-                timestamp,
-                DiagnosticModule.EngineEcu,
-                readings);
-        }
     }
 
     private void UpdateSessionSummary()

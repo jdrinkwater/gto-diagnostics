@@ -2,6 +2,7 @@ using GtoDiagnostics.Core;
 using GtoDiagnostics.Core.Definitions;
 using GtoDiagnostics.Core.Logging;
 using GtoDiagnostics.Protocol;
+using GtoDiagnostics.Runtime;
 using GtoDiagnostics.Simulator;
 
 await using var transport = new ScriptedByteTransport();
@@ -55,6 +56,46 @@ AssertContains("coolant_temp", decodedLog);
 AssertContains("throttle_position", decodedLog);
 AssertContains("battery_voltage", decodedLog);
 
+await using var pollingTransport = new ScriptedByteTransport();
+pollingTransport.EnqueueResponse(HexBytes.Parse("90 01 64 80 8E"));
+await pollingTransport.OpenAsync();
+
+var pollingCapturePath = Path.Combine(Path.GetTempPath(), $"gto-polling-capture-test-{Guid.NewGuid():N}.jsonl");
+var pollingJsonPath = Path.Combine(Path.GetTempPath(), $"gto-polling-readings-test-{Guid.NewGuid():N}.jsonl");
+var pollingCsvPath = Path.Combine(Path.GetTempPath(), $"gto-polling-readings-test-{Guid.NewGuid():N}.csv");
+
+await using (var pollingCaptureWriter = new RawCaptureWriter(pollingCapturePath))
+await using (var pollingJsonWriter = new DecodedReadingLogWriter(pollingJsonPath))
+await using (var pollingCsvWriter = new DecodedReadingCsvLogWriter(pollingCsvPath))
+{
+    var session = new LivePollingSession(
+        pollingTransport,
+        definition,
+        pollingCaptureWriter,
+        pollingJsonWriter,
+        pollingCsvWriter);
+
+    var result = await session.PollOnceAsync();
+    AssertEqual("10 01", HexBytes.Format(result.Command));
+    AssertEqual("90 01 64 80 8E", HexBytes.Format(result.Response));
+    AssertEqual(3, result.Readings.Count);
+    AssertEqual("coolant_temp", result.Readings[0].Id);
+}
+
+var pollingCapture = await File.ReadAllTextAsync(pollingCapturePath);
+AssertContainsIgnoreCase("\"direction\":\"transmit\"", pollingCapture);
+AssertContainsIgnoreCase("\"direction\":\"receive\"", pollingCapture);
+AssertContains("\"bytes\":\"10 01\"", pollingCapture);
+AssertContains("\"bytes\":\"90 01 64 80 8E\"", pollingCapture);
+
+var pollingJson = await File.ReadAllTextAsync(pollingJsonPath);
+AssertContains("coolant_temp", pollingJson);
+AssertContains("battery_voltage", pollingJson);
+
+var pollingCsv = await File.ReadAllTextAsync(pollingCsvPath);
+AssertContains("timestamp,module,sensor_id,sensor_name,value,unit", pollingCsv);
+AssertContains("EngineEcu,coolant_temp,Coolant Temperature,60,C", pollingCsv);
+
 Console.WriteLine("GtoDiagnostics.E2E.Tests passed.");
 
 static void AssertEqual<T>(T expected, T actual)
@@ -68,6 +109,14 @@ static void AssertEqual<T>(T expected, T actual)
 static void AssertContains(string expected, string actual)
 {
     if (!actual.Contains(expected, StringComparison.Ordinal))
+    {
+        throw new InvalidOperationException($"Expected text to contain '{expected}'.");
+    }
+}
+
+static void AssertContainsIgnoreCase(string expected, string actual)
+{
+    if (!actual.Contains(expected, StringComparison.OrdinalIgnoreCase))
     {
         throw new InvalidOperationException($"Expected text to contain '{expected}'.");
     }

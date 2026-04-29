@@ -33,6 +33,7 @@ This is the first scaffold. It includes:
 - decoded live-data CSV session logging
 - protocol hex helpers and raw JSONL capture writer
 - raw JSONL capture replay reader
+- shared live-data polling session for simulator and future transports
 - serial device discovery for common Linux USB serial device paths
 - hardware-free scripted byte transport for simulator/replay testing
 - small executable test projects with no external test package dependency

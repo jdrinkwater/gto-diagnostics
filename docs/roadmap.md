@@ -21,7 +21,7 @@ be useful without depending on unknown vehicle protocol details.
    - Expose request commands from module definitions.
    - Remove hardcoded polling commands from app-level flow where possible.
 
-4. Live polling session abstraction
+4. Live polling session abstraction - complete
    - Introduce a service that owns one polling cycle.
    - Use an `IByteTransport`, a module definition, raw capture logging, and decoded logging.
    - Share this path between simulator, tests, and future serial transport.
