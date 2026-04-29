@@ -52,6 +52,22 @@ AssertContains("throttle_position", decodedLog);
 AssertContains("battery_voltage", decodedLog);
 AssertContains("EngineEcu", decodedLog);
 
+var csvLogPath = Path.Combine(Path.GetTempPath(), $"gto-decoded-readings-test-{Guid.NewGuid():N}.csv");
+await using (var writer = new DecodedReadingCsvLogWriter(csvLogPath))
+{
+    await writer.WriteAsync(DateTimeOffset.UnixEpoch, DiagnosticModule.EngineEcu, readings);
+    await writer.WriteAsync(
+        DateTimeOffset.UnixEpoch,
+        DiagnosticModule.EngineEcu,
+        [new SensorReading("quoted_sensor", "Quoted, \"Sensor\"", "V", 12.5)]);
+}
+
+var csvLog = await File.ReadAllTextAsync(csvLogPath);
+AssertContains("timestamp,module,sensor_id,sensor_name,value,unit", csvLog);
+AssertContains("1970-01-01T00:00:00.0000000+00:00,EngineEcu,coolant_temp,Coolant Temperature,60,C", csvLog);
+AssertContains("1970-01-01T00:00:00.0000000+00:00,EngineEcu,throttle_position,Throttle Position,50.196078431372548,%", csvLog);
+AssertContains("1970-01-01T00:00:00.0000000+00:00,EngineEcu,quoted_sensor,\"Quoted, \"\"Sensor\"\"\",12.5,V", csvLog);
+
 Console.WriteLine("GtoDiagnostics.Core.Tests passed.");
 
 static void AssertEqual<T>(T expected, T actual)

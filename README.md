@@ -29,6 +29,7 @@ This is the first scaffold. It includes:
 - module and sensor definition models
 - provisional engine ECU live-data decoder for simulator UI work
 - decoded live-data JSONL session logging
+- decoded live-data CSV session logging
 - protocol hex helpers and raw JSONL capture writer
 - raw JSONL capture replay reader
 - serial device discovery for common Linux USB serial device paths

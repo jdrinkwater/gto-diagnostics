@@ -11,7 +11,7 @@ be useful without depending on unknown vehicle protocol details.
    - Decode them using the current module definitions.
    - Verify replay through an end-to-end test.
 
-2. CSV decoded logging
+2. CSV decoded logging - complete
    - Add CSV output beside decoded JSONL readings.
    - Keep timestamps, module, sensor id, display name, value, and unit.
    - Cover formatting with focused tests.

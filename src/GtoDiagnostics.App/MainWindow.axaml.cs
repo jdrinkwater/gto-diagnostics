@@ -15,8 +15,10 @@ public partial class MainWindow : Window
     private readonly LiveDataDecoder liveDataDecoder;
     private RawCaptureWriter? captureWriter;
     private DecodedReadingLogWriter? decodedReadingLogWriter;
+    private DecodedReadingCsvLogWriter? decodedReadingCsvLogWriter;
     private string? capturePath;
     private string? decodedReadingsPath;
+    private string? decodedReadingsCsvPath;
     private int sampleCount;
 
     public MainWindow()
@@ -77,7 +79,7 @@ public partial class MainWindow : Window
 
     private async Task StartCaptureAsync()
     {
-        if (captureWriter is not null || decodedReadingLogWriter is not null)
+        if (captureWriter is not null || decodedReadingLogWriter is not null || decodedReadingCsvLogWriter is not null)
         {
             return;
         }
@@ -86,10 +88,12 @@ public partial class MainWindow : Window
         var sessionId = DateTimeOffset.Now.ToString("yyyyMMdd-HHmmss");
         capturePath = Path.Combine("captures", $"session-{sessionId}.raw.jsonl");
         decodedReadingsPath = Path.Combine("captures", $"session-{sessionId}.readings.jsonl");
+        decodedReadingsCsvPath = Path.Combine("captures", $"session-{sessionId}.readings.csv");
         captureWriter = new RawCaptureWriter(capturePath);
         decodedReadingLogWriter = new DecodedReadingLogWriter(decodedReadingsPath);
+        decodedReadingCsvLogWriter = new DecodedReadingCsvLogWriter(decodedReadingsCsvPath);
 
-        CapturePathText.Text = $"Raw: {capturePath}{Environment.NewLine}Readings: {decodedReadingsPath}";
+        CapturePathText.Text = $"Raw: {capturePath}{Environment.NewLine}Readings: {decodedReadingsPath}{Environment.NewLine}CSV: {decodedReadingsCsvPath}";
         StartCaptureButton.IsEnabled = false;
         StopCaptureButton.IsEnabled = true;
 
@@ -100,7 +104,7 @@ public partial class MainWindow : Window
 
     private async Task StopCaptureAsync()
     {
-        if (captureWriter is null && decodedReadingLogWriter is null)
+        if (captureWriter is null && decodedReadingLogWriter is null && decodedReadingCsvLogWriter is null)
         {
             return;
         }
@@ -116,8 +120,14 @@ public partial class MainWindow : Window
             await decodedReadingLogWriter.DisposeAsync();
         }
 
+        if (decodedReadingCsvLogWriter is not null)
+        {
+            await decodedReadingCsvLogWriter.DisposeAsync();
+        }
+
         captureWriter = null;
         decodedReadingLogWriter = null;
+        decodedReadingCsvLogWriter = null;
 
         StartCaptureButton.IsEnabled = true;
         StopCaptureButton.IsEnabled = false;
@@ -171,15 +181,28 @@ public partial class MainWindow : Window
 
     private async Task WriteDecodedReadingsAsync(IReadOnlyList<SensorReading> readings)
     {
-        if (decodedReadingLogWriter is null)
+        if (decodedReadingLogWriter is null && decodedReadingCsvLogWriter is null)
         {
             return;
         }
 
-        await decodedReadingLogWriter.WriteAsync(
-            DateTimeOffset.UtcNow,
-            DiagnosticModule.EngineEcu,
-            readings);
+        var timestamp = DateTimeOffset.UtcNow;
+
+        if (decodedReadingLogWriter is not null)
+        {
+            await decodedReadingLogWriter.WriteAsync(
+                timestamp,
+                DiagnosticModule.EngineEcu,
+                readings);
+        }
+
+        if (decodedReadingCsvLogWriter is not null)
+        {
+            await decodedReadingCsvLogWriter.WriteAsync(
+                timestamp,
+                DiagnosticModule.EngineEcu,
+                readings);
+        }
     }
 
     private void UpdateSessionSummary()
